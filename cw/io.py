@@ -367,6 +367,50 @@ def collect_aligned_waters(
 # ── CIF writing ───────────────────────────────────────────────────────────────
 
 
+def write_water_points_cif(
+    out_path: Path,
+    coords: np.ndarray,
+    *,
+    chain_id: str | np.ndarray = "A",
+    res_id: np.ndarray | None = None,
+    occupancy: float | np.ndarray = 1.0,
+    b_factor: float | np.ndarray = 0.0,
+    data_block: str = "points",
+) -> None:
+    """Write 3D points as HOH water-oxygen atoms in an mmCIF file.
+
+    Coordinates go through pdbx.set_structure, which writes Cartn_x/y/z at full
+    float precision (no PDB 8.3f column-width limit) — safe for points in offset
+    crystal frames. Shared by write_cluster_cif and by the batch point lists fed
+    to phenix.map_value_at_point, where input atom order == output value order.
+    """
+    coords = np.asarray(coords, dtype=float)
+    n = len(coords)
+    atoms = struc.AtomArray(n)
+    atoms.coord = coords
+    atoms.chain_id = (
+        np.full(n, chain_id, dtype="U4")
+        if isinstance(chain_id, str)
+        else np.asarray(chain_id).astype("U4")
+    )
+    atoms.res_id = (
+        np.arange(1, n + 1, dtype=int) if res_id is None else np.asarray(res_id, dtype=int)
+    )
+    atoms.res_name[:] = "HOH"
+    atoms.atom_name[:] = "O"
+    atoms.element[:] = "O"
+    atoms.hetero[:] = True
+    atoms.add_annotation("b_factor", dtype=float)
+    atoms.b_factor[:] = b_factor
+    atoms.add_annotation("occupancy", dtype=float)
+    atoms.occupancy[:] = occupancy
+
+    cif_file = pdbx.CIFFile()
+    pdbx.set_structure(cif_file, atoms, data_block=data_block)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    cif_file.write(out_path)
+
+
 def write_cluster_cif(
     out_path: Path,
     *,
@@ -434,25 +478,16 @@ def write_cluster_cif(
         frames.append(noise)
 
     rows = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
-    n = len(rows)
 
-    atoms = struc.AtomArray(n)
-    atoms.coord = rows[["x", "y", "z"]].to_numpy(dtype=float)
-    atoms.chain_id = rows["chain_id"].to_numpy().astype("U4")
-    atoms.res_id = rows["res_id"].to_numpy(dtype=int)
-    atoms.res_name[:] = "HOH"
-    atoms.atom_name[:] = "O"
-    atoms.element[:] = "O"
-    atoms.hetero[:] = True
-    atoms.add_annotation("b_factor", dtype=float)
-    atoms.b_factor[:] = rows["b_factor"].to_numpy(dtype=float)
-    atoms.add_annotation("occupancy", dtype=float)
-    atoms.occupancy[:] = rows["occupancy"].to_numpy(dtype=float)
-
-    cif_file = pdbx.CIFFile()
-    pdbx.set_structure(cif_file, atoms, data_block="clusters")
-    out_path.parent.mkdir(parents=True, exist_ok=True)
-    cif_file.write(out_path)
+    write_water_points_cif(
+        out_path,
+        rows[["x", "y", "z"]].to_numpy(dtype=float),
+        chain_id=rows["chain_id"].to_numpy().astype("U4"),
+        res_id=rows["res_id"].to_numpy(dtype=int),
+        occupancy=rows["occupancy"].to_numpy(dtype=float),
+        b_factor=rows["b_factor"].to_numpy(dtype=float),
+        data_block="clusters",
+    )
 
 
 def write_filtered_cif(
