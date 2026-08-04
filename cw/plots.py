@@ -252,6 +252,50 @@ def plot_pr_scatter(
     return fig, ax
 
 
+def plot_map_value_vs_occupancy(
+    summary_df: pd.DataFrame,
+    *,
+    noise_df: pd.DataFrame | None = None,
+    stat: str = "median",
+    ax=None,
+    title: str | None = None,
+):
+    """Scatter of per-cluster map value vs cluster occupancy, B vs A overlaid.
+
+    summary_df is cluster_map_summary.csv: one row per cluster with
+    cluster_occupancy and {stat}_map_B / {stat}_map_A columns (B = inverse-
+    transform over all legitimate structures; A = naive over the rmsd_before-
+    eligible subset). noise_df (noise_map_summary.csv) is drawn as a faint
+    low-occupancy series when given. Returns (fig, ax).
+    """
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(5.5, 4))
+    else:
+        fig = ax.figure
+
+    if noise_df is not None and not noise_df.empty and f"{stat}_map_B" in noise_df:
+        ax.scatter(noise_df["cluster_occupancy"], noise_df[f"{stat}_map_B"],
+                   s=8, alpha=0.25, color="grey", label="noise (B)", zorder=1)
+
+    b_col, a_col = f"{stat}_map_B", f"{stat}_map_A"
+    if a_col in summary_df:
+        ax.scatter(summary_df["cluster_occupancy"], summary_df[a_col],
+                   s=18, alpha=0.6, color="tab:orange", edgecolors="none",
+                   label="A: naive (rmsd_before-eligible)", zorder=2)
+    if b_col in summary_df:
+        ax.scatter(summary_df["cluster_occupancy"], summary_df[b_col],
+                   s=18, alpha=0.8, color="tab:blue", edgecolors="k", linewidths=0.3,
+                   label="B: inverse-transform (all legit)", zorder=3)
+
+    ax.axhline(0, color="k", lw=0.6, ls=":")
+    ax.set_xlabel("cluster occupancy")
+    ax.set_ylabel(f"{stat} map value across structures (σ)")
+    ax.set_xlim(0, 1.01)
+    ax.legend(fontsize=8, framealpha=0.9)
+    ax.set_title(title or "Map value at consensus position vs occupancy")
+    return fig, ax
+
+
 def finite(values):
     """`values` as a float array with NaN/inf dropped."""
     values = np.asarray(values, dtype=float)
