@@ -34,7 +34,12 @@ def test_num_water_biotite_matches_gemmi(cif_path_5f16):
         for atom in res
         if atom.element == gemmi.Element("O")
     )
-    atoms = pdbx.get_structure(pdbx.CIFFile.read(cif_path_5f16), model=1, altloc="all")
+    atoms = pdbx.get_structure(
+        pdbx.CIFFile.read(cif_path_5f16),
+        model=1,
+        altloc="all",
+        use_author_fields=True,
+    )
     biotite_count = int(((atoms.res_name == "HOH") & atoms.hetero & (atoms.element == "O")).sum())
     assert biotite_count == gemmi_count
 

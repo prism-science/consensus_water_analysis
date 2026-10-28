@@ -10,7 +10,7 @@ requires-python = ">=3.12,<3.14"
 license = "MIT"
 license-files = ["LICENSE"]
 dependencies = [
-    "biotite>=1.6",
+    "biotite>=2,<3",
     "gemmi>=0.7.5",
     "hdbscan>=0.8.44",
     "joblib>=1.5",

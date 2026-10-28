@@ -67,6 +67,7 @@ def main() -> None:
             model=1,
             altloc="all",
             extra_fields=["b_factor", "occupancy"],
+            use_author_fields=True,
         )
         ref = bfactor_reference(atoms, water_oxygen_mask(atoms), population)
         std = ref.std()

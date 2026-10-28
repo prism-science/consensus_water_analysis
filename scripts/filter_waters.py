@@ -60,6 +60,7 @@ def _filter_one(
             model=1,
             altloc="all",
             extra_fields=["b_factor", "occupancy"],
+            use_author_fields=True,
         )
 
         edia_lists: dict | None = None

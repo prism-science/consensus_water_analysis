@@ -241,7 +241,7 @@ def load_protein(
     (caller's read is reused, avoiding a second disk hit).
     """
     cif_file = pdbx.CIFFile.read(src) if isinstance(src, Path) else src
-    atoms = pdbx.get_structure(cif_file, model=1, altloc=altloc)
+    atoms = pdbx.get_structure(cif_file, model=1, altloc=altloc, use_author_fields=True)
 
     protein_mask = struc.filter_amino_acids(atoms)
     protein = atoms[protein_mask]
@@ -295,7 +295,13 @@ def load_structure_waters(
     else:
         cf = cif_path
         pdb_id = pdb_id if pdb_id is not None else "structure"
-    atoms = pdbx.get_structure(cf, model=1, altloc="all", extra_fields=["b_factor", "occupancy"])
+    atoms = pdbx.get_structure(
+        cf,
+        model=1,
+        altloc="all",
+        extra_fields=["b_factor", "occupancy"],
+        use_author_fields=True,
+    )
     waters = atoms[water_oxygen_mask(atoms)]
 
     df = pd.DataFrame(

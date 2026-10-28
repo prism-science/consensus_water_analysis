@@ -244,7 +244,7 @@ def metadata_row(cif_path: Path) -> dict:
     from cw.io import count_water_oxygens
 
     _cif = pdbx.CIFFile.read(cif_path)
-    _atoms = pdbx.get_structure(_cif, model=1, altloc="all")
+    _atoms = pdbx.get_structure(_cif, model=1, altloc="all", use_author_fields=True)
     num_water = count_water_oxygens(_atoms)
 
     # --- gemmi raw CIF: R-work, R-free, ligand names ---

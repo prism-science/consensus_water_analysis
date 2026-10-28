@@ -125,7 +125,11 @@ def _(meta_cif_path, metadata_row, mo):
 def _(count_water_oxygens, meta_cif_path, meta_row, mo, pdbx):
     _cif = pdbx.CIFFile.read(meta_cif_path)
     _atoms = pdbx.get_structure(
-        _cif, model=1, altloc="all", extra_fields=["b_factor", "occupancy"]
+        _cif,
+        model=1,
+        altloc="all",
+        extra_fields=["b_factor", "occupancy"],
+        use_author_fields=True,
     )
     _biotite_count = count_water_oxygens(_atoms)
     _gemmi_count = meta_row["num_water"]
@@ -227,7 +231,11 @@ def _(Path, filt_cif_input, filt_cutoff_input, mo):
 def _(count_water_oxygens, filt_cif_path, gemmi, pdbx):
     _cif = pdbx.CIFFile.read(str(filt_cif_path))
     filt_atoms = pdbx.get_structure(
-        _cif, model=1, altloc="all", extra_fields=["b_factor", "occupancy"]
+        _cif,
+        model=1,
+        altloc="all",
+        extra_fields=["b_factor", "occupancy"],
+        use_author_fields=True,
     )
 
     _st = gemmi.read_structure(str(filt_cif_path))
@@ -391,7 +399,7 @@ def _(
 def _(aln_mob_path, aln_out_path, aln_report, count_water_oxygens, mo, pdbx):
     def _counts(path):
         _f = pdbx.CIFFile.read(str(path))
-        _a = pdbx.get_structure(_f, model=1, altloc="all")
+        _a = pdbx.get_structure(_f, model=1, altloc="all", use_author_fields=True)
         return len(_a), count_water_oxygens(_a)
 
     _ = aln_report  # depend on the report so the aligned file is written before we read it

@@ -67,6 +67,7 @@ def filtered_5f14(cif_path_5f14):
         model=1,
         altloc="all",
         extra_fields=["b_factor", "occupancy"],
+        use_author_fields=True,
     )
     filtered, stats, keep_mask = filter_waters(atoms, cell, sg, CUTOFF)
     return atoms, filtered, stats["n_removed_distance"]
@@ -105,6 +106,7 @@ def _load_atoms(cif_path):
         model=1,
         altloc="all",
         extra_fields=["b_factor", "occupancy"],
+        use_author_fields=True,
     )
 
 

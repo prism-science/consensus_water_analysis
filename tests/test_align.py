@@ -50,7 +50,12 @@ def test_kabsch_no_reflection():
 
 
 def _atom_counts(cif_path):
-    atoms = pdbx.get_structure(pdbx.CIFFile.read(str(cif_path)), model=1, altloc="all")
+    atoms = pdbx.get_structure(
+        pdbx.CIFFile.read(str(cif_path)),
+        model=1,
+        altloc="all",
+        use_author_fields=True,
+    )
     n_protein = int((~atoms.hetero).sum())
     n_water = int(((atoms.res_name == "HOH") & atoms.hetero & (atoms.element == "O")).sum())
     return n_protein, n_water

@@ -84,7 +84,11 @@ def written_5f14(cif_path_5f14, tmp_path_factory):
     # scenario that triggered the SerializationError.
     cif_file = pdbx.CIFFile.read(cif_path_5f14)
     atoms = pdbx.get_structure(
-        cif_file, model=1, altloc="all", extra_fields=["b_factor", "occupancy"]
+        cif_file,
+        model=1,
+        altloc="all",
+        extra_fields=["b_factor", "occupancy"],
+        use_author_fields=True,
     )
 
     water_O_idx = np.where((atoms.res_name == "HOH") & atoms.hetero & (atoms.element == "O"))[0]
