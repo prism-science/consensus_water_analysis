@@ -6,6 +6,7 @@ from cw.io import (
     find_cohort_metadata,
     load_structure_waters,
     normalize_ins_code,
+    read_cohort,
     write_filtered_cif,
 )
 
@@ -26,6 +27,22 @@ from cw.io import (
 )
 def test_normalize_ins_code(inp, expected):
     assert normalize_ins_code(inp) == expected
+
+
+# ── read_cohort ─────────────────────────────────────────────────────────────────────────
+
+
+def test_read_cohort_normalizes_only_pdb_codes(tmp_path):
+    cohort = tmp_path / "cohort.txt"
+    cohort.write_text(
+        "5F14_final extra-field\n"
+        "5F16\n"
+        "UCSF-P0067\n"
+        "UCSF-P0067_stage2\n"
+        "5f14_other\n"
+    )
+
+    assert read_cohort(cohort) == ["5f14", "5f16", "UCSF-P0067", "UCSF-P0067_stage2"]
 
 
 # ── load_structure_waters ─────────────────────────────────────────────────────

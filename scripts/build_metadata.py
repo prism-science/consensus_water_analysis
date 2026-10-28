@@ -72,7 +72,7 @@ def main() -> None:
     for member_id in found:
         cif_path = cif_paths[member_id]
         try:
-            row = metadata_row(cif_path)
+            row = metadata_row(cif_path, member_id)
             rows.append(row)
             logger.debug(f"  {member_id}: ok")
         except Exception as exc:

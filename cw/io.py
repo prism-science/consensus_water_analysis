@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from loguru import logger
 
+from cw.metadata import _PDB_CODE_RE
 from cw.metrics import (
     consensus_centers,
     consensus_water_mask,
@@ -26,17 +27,17 @@ def normalize_ins_code(ins_code) -> str:
 
 
 def read_cohort(txt_path: Path) -> list[str]:
-    """Read PDB IDs from a cohort .txt file.
+    """Read member IDs from a cohort .txt file.
 
     Blank lines and lines starting with '#' are ignored.
-    Returns lowercase 4-char PDB IDs in file order, de-duplicated (first
-    occurrence kept). A cohort is a set of distinct structures, so a repeated ID
-    would otherwise be loaded twice — double-counting it in every stage and, for
-    clustering, doubling its water density and inflating the cluster_occupancy
-    denominator.
+    Returns IDs in file order, de-duplicated (first occurrence kept). Four-character
+    PDB codes are lowercased and may carry a suffix after '_' (e.g. '5F14_final'
+    becomes '5f14'); non-PDB dataset IDs pass through unchanged. A cohort is a set
+    of distinct structures, so a repeated ID would otherwise be loaded twice —
+    double-counting it in every stage and, for clustering, doubling its water
+    density and inflating the cluster_occupancy denominator.
     Each line is split on whitespace; only the first token is used (inline
-    comments and extra fields are ignored). Any suffix after the first '_' is
-    stripped (e.g. '5F14_final' → '5f14').
+    comments and extra fields are ignored).
     """
     ids = []
     for line in txt_path.read_text().splitlines():
@@ -44,7 +45,8 @@ def read_cohort(txt_path: Path) -> list[str]:
         if not line or line.startswith("#"):
             continue
         token = line.split()[0]
-        ids.append(token.split("_")[0].lower())
+        pdb_code = token.split("_", 1)[0]
+        ids.append(pdb_code.lower() if _PDB_CODE_RE.fullmatch(pdb_code) else token)
     unique_ids = list(dict.fromkeys(ids))
     if len(unique_ids) != len(ids):
         logger.warning(

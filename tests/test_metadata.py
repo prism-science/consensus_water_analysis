@@ -21,7 +21,15 @@ GROUND_TRUTH_METADATA_5F16 = {
 
 @pytest.fixture(scope="module")
 def row(cif_path_5f16):
-    return metadata_row(cif_path_5f16)
+    return metadata_row(cif_path_5f16, "5f16")
+
+
+def test_non_pdb_id_skips_rcsb_fetch(cif_path_5f16, monkeypatch):
+    def fail_fetch(_pdb_id):
+        pytest.fail("non-PDB dataset IDs must not be fetched from RCSB")
+
+    monkeypatch.setattr("cw.metadata._fetch_rcsb_entry", fail_fetch)
+    assert metadata_row(cif_path_5f16, "UCSF-P0067")["pdb_id"] == "UCSF-P0067"
 
 
 def test_num_water_biotite_matches_gemmi(cif_path_5f16):

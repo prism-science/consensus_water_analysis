@@ -215,7 +215,7 @@ def resolve_crystal_grow(entry: dict | None) -> tuple[float | str, float | str]:
     return ph, _first("temp")
 
 
-def metadata_row(cif_path: Path) -> dict:
+def metadata_row(cif_path: Path, pdb_id: str) -> dict:
     """Extract one metadata CSV row from a local mmCIF file + RCSB API.
 
     Library split:
@@ -227,8 +227,6 @@ def metadata_row(cif_path: Path) -> dict:
                                crystal_grow_temp, diffrn_temp
                                (absent from re-refined local CIFs)
     """
-    pdb_id = cif_path.stem.removesuffix("_final")
-
     # --- gemmi structure: space group, unit cell, resolution ---
     st = gemmi.read_structure(str(cif_path))
     sg = st.find_spacegroup()
@@ -261,7 +259,7 @@ def metadata_row(cif_path: Path) -> dict:
     ligand_names = "|".join(sorted(nonpoly_comp_ids)) if nonpoly_comp_ids else ""
 
     # --- RCSB Data API: experiment condition, starting model, deposited R-factors ---
-    entry = _fetch_rcsb_entry(pdb_id)
+    entry = _fetch_rcsb_entry(pdb_id) if _PDB_CODE_RE.fullmatch(pdb_id) else None
     _codes, _status, starting_model = resolve_starting_model(entry, pdb_id)
     deposited_r_work, deposited_r_free = resolve_deposited_r_factors(entry)
     ph, crystal_grow_temp = resolve_crystal_grow(entry)

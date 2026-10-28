@@ -115,8 +115,8 @@ def _(Path, meta_cif_input, meta_edia_input, mo):
 
 
 @app.cell
-def _(meta_cif_path, metadata_row, mo):
-    meta_row = metadata_row(meta_cif_path)
+def _(meta_cif_path, meta_pdb_id, metadata_row, mo):
+    meta_row = metadata_row(meta_cif_path, meta_pdb_id)
     mo.md("### metadata row\n\n" + "\n".join(f"- **{k}**: `{v}`" for k, v in meta_row.items()))
     return (meta_row,)
 
