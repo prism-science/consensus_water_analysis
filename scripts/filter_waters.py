@@ -161,6 +161,13 @@ def main() -> None:
         "always inclusive.",
     )
     parser.add_argument(
+        "--source-dir",
+        type=Path,
+        default=None,
+        help="Directory of input CIFs, resolved with config.CIF_TEMPLATE "
+        "(default: config.ALL_PDB_REDO_DIR)",
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=None,
@@ -224,19 +231,19 @@ def main() -> None:
     cohort_id = cohort_path.stem
     out_dir: Path = args.output_dir or Path(config.DATA_DIR) / cohort_id / "filtered_pdbs"
 
+    source_dir = args.source_dir or Path(config.ALL_PDB_REDO_DIR)
     member_ids = read_cohort(cohort_path)
-    cif_paths = {
-        m: cif_path_for(m, config.ALL_PDB_REDO_DIR, config.CIF_TEMPLATE) for m in member_ids
-    }
+    cif_paths = {m: cif_path_for(m, source_dir, config.CIF_TEMPLATE) for m in member_ids}
     missing = [m for m, p in cif_paths.items() if not p.exists()]
     found = [m for m, p in cif_paths.items() if p.exists()]
 
-    edia_paths = {m: cif_path_for(m, config.ALL_PDB_REDO_DIR, config.EDIA_TEMPLATE) for m in found}
+    edia_paths = {m: cif_path_for(m, source_dir, config.EDIA_TEMPLATE) for m in found}
 
     logger.info(f"Cohort:  {cohort_id}")
     logger.info(f"Members: {len(member_ids)} total — {len(found)} found, {len(missing)} missing")
     if missing:
         logger.warning(f"Missing CIFs: {', '.join(missing)}")
+    logger.info(f"Source:  {source_dir}")
     logger.info(f"Output:  {out_dir}")
     logger.info(f"Cutoff:  {args.cutoff} Å")
     edia_op = ">" if exclusive_borderline else ">="

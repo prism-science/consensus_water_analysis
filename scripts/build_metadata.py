@@ -33,6 +33,13 @@ def main() -> None:
         default=None,
         help="Output CSV path (default: config.DATA_DIR/<cohort_id>/metadata.csv)",
     )
+    parser.add_argument(
+        "--source-dir",
+        type=Path,
+        default=None,
+        help="Directory of input CIFs, resolved with config.CIF_TEMPLATE "
+        "(default: config.ALL_PDB_REDO_DIR)",
+    )
     verbosity = parser.add_mutually_exclusive_group()
     verbosity.add_argument("--verbose", action="store_true", help="Show debug output")
     verbosity.add_argument("--quiet", action="store_true", help="Show warnings and errors only")
@@ -54,10 +61,9 @@ def main() -> None:
     cohort_id = cohort_path.stem
     out_path: Path = args.output or Path(config.DATA_DIR) / cohort_id / "metadata.csv"
 
+    source_dir = args.source_dir or Path(config.ALL_PDB_REDO_DIR)
     member_ids = read_cohort(cohort_path)
-    cif_paths = {
-        m: cif_path_for(m, config.ALL_PDB_REDO_DIR, config.CIF_TEMPLATE) for m in member_ids
-    }
+    cif_paths = {m: cif_path_for(m, source_dir, config.CIF_TEMPLATE) for m in member_ids}
     missing = [m for m, p in cif_paths.items() if not p.exists()]
     found = [m for m, p in cif_paths.items() if p.exists()]
 
@@ -65,6 +71,7 @@ def main() -> None:
     logger.info(f"Members: {len(member_ids)} total — {len(found)} found, {len(missing)} missing")
     if missing:
         logger.warning(f"Missing CIFs: {', '.join(missing)}")
+    logger.info(f"Source:  {source_dir}")
     logger.info(f"Output:  {out_path}")
 
     rows = []

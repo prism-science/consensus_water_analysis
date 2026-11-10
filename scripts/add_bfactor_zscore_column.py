@@ -14,6 +14,7 @@ so the column agrees with Stage 2 without being told twice.
 Usage:
     uv run scripts/add_bfactor_zscore_column.py <cluster_members.csv> [-o OUT]
                                                 [--population water|protein|all]
+                                                [--source-dir DIR]
 """
 
 import argparse
@@ -47,18 +48,27 @@ def main() -> None:
         default=None,
         help="Z-score reference population (default: config.BFACTOR_POPULATION)",
     )
+    parser.add_argument(
+        "--source-dir",
+        type=Path,
+        default=None,
+        help="Directory of input CIFs, resolved with config.CIF_TEMPLATE "
+        "(default: config.ALL_PDB_REDO_DIR)",
+    )
     args = parser.parse_args()
 
     population = args.population or getattr(config, "BFACTOR_POPULATION", "water")
+    source_dir = args.source_dir or Path(config.ALL_PDB_REDO_DIR)
 
     logger.remove()
     logger.add(sys.stderr, level="INFO")
 
+    logger.info(f"Source: {source_dir}")
     df = pd.read_csv(args.members_csv)
 
     zscore = pd.Series(float("nan"), index=df.index)
     for pdb_id in df["pdb_id"].unique():
-        cif_path = cif_path_for(pdb_id, config.ALL_PDB_REDO_DIR, config.CIF_TEMPLATE)
+        cif_path = cif_path_for(pdb_id, source_dir, config.CIF_TEMPLATE)
         if not cif_path.exists():
             logger.warning(f"{pdb_id}: CIF not found ({cif_path}) — leaving z-score NaN")
             continue
