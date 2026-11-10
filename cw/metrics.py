@@ -225,6 +225,73 @@ def per_structure_consensus_chamfer(
     return pd.DataFrame(rows)
 
 
+def match_consensus_sites(
+    baseline_clusters: pd.DataFrame,
+    other_clusters: pd.DataFrame,
+    occupancy_cutoff: float,
+    radius: float,
+) -> pd.DataFrame:
+    """One-to-one match of two cohorts' consensus sites (same coordinate frame).
+
+    Consensus sites are clusters with cluster_occupancy ≥ occupancy_cutoff. Pairs
+    are chosen by minimum total distance (Hungarian assignment) among pairs no
+    farther apart than `radius`, so one site never absorbs two. Returns one row
+    per site, outer-joined: baseline_cluster_id / other_cluster_id (NaN when that
+    side has no partner), their occupancies, and the center distance in Å (NaN
+    when unmatched). A row with only a baseline id is a lost site; only an other
+    id, a new site.
+    """
+    from scipy.optimize import linear_sum_assignment
+
+    columns = ["cluster_id", "cluster_occupancy", "center_x", "center_y", "center_z"]
+    base = baseline_clusters.loc[
+        baseline_clusters["cluster_occupancy"] >= occupancy_cutoff, columns
+    ].reset_index(drop=True)
+    other = other_clusters.loc[
+        other_clusters["cluster_occupancy"] >= occupancy_cutoff, columns
+    ].reset_index(drop=True)
+
+    base_xyz = base[["center_x", "center_y", "center_z"]].to_numpy(dtype=float)
+    other_xyz = other[["center_x", "center_y", "center_z"]].to_numpy(dtype=float)
+
+    pairs: list[tuple[int, int, float]] = []
+    if len(base) and len(other):
+        distance = np.linalg.norm(base_xyz[:, None, :] - other_xyz[None, :, :], axis=-1)
+        # pairs beyond the radius get a cost larger than any feasible total, so the
+        # assignment only uses them when forced, and they are dropped afterwards
+        cost = np.where(distance <= radius, distance, radius * (len(base) + len(other) + 1))
+        rows, cols = linear_sum_assignment(cost)
+        pairs = [(r, c, distance[r, c]) for r, c in zip(rows, cols) if distance[r, c] <= radius]
+
+    matched_base = {r for r, _, _ in pairs}
+    matched_other = {c for _, c, _ in pairs}
+    records = [
+        {
+            "baseline_cluster_id": base.at[r, "cluster_id"],
+            "other_cluster_id": other.at[c, "cluster_id"],
+            "baseline_occupancy": base.at[r, "cluster_occupancy"],
+            "other_occupancy": other.at[c, "cluster_occupancy"],
+            "distance": float(d),
+        }
+        for r, c, d in pairs
+    ]
+    records += [
+        {"baseline_cluster_id": base.at[r, "cluster_id"],
+         "baseline_occupancy": base.at[r, "cluster_occupancy"]}
+        for r in range(len(base)) if r not in matched_base
+    ]
+    records += [
+        {"other_cluster_id": other.at[c, "cluster_id"],
+         "other_occupancy": other.at[c, "cluster_occupancy"]}
+        for c in range(len(other)) if c not in matched_other
+    ]
+    return pd.DataFrame(
+        records,
+        columns=["baseline_cluster_id", "other_cluster_id", "baseline_occupancy",
+                 "other_occupancy", "distance"],
+    )
+
+
 # ── two-sample comparison of a split's two halves ─────────────────────────────
 
 
